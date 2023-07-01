@@ -12,8 +12,7 @@ from langchain.llms import OpenAI
 @pytest.fixture(scope="module")
 def df() -> DataFrame:
     random_data = np.random.rand(4, 4)
-    df = DataFrame(random_data, columns=["name", "age", "food", "sport"])
-    return df
+    return DataFrame(random_data, columns=["name", "age", "food", "sport"])
 
 
 def test_pandas_agent_creation(df: DataFrame) -> None:
@@ -27,4 +26,4 @@ def test_data_reading(df: DataFrame) -> None:
     response = agent.run("how many rows in df? Give me a number.")
     result = re.search(rf".*({df.shape[0]}).*", response)
     assert result is not None
-    assert result.group(1) is not None
+    assert result[1] is not None

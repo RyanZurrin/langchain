@@ -81,19 +81,17 @@ class BaseTracer(BaseCallbackHandler, ABC):
     def _start_trace(self, run: Union[LLMRun, ChainRun, ToolRun]) -> None:
         """Start a trace for a run."""
         if run.parent_uuid:
-            parent_run = self.run_map[run.parent_uuid]
-            if parent_run:
-                if isinstance(parent_run, LLMRun):
-                    raise TracerException(
-                        "Cannot add child run to an LLM run. "
-                        "LLM runs are not allowed to have children."
-                    )
-                self._add_child_run(parent_run, run)
-            else:
+            if not (parent_run := self.run_map[run.parent_uuid]):
                 raise TracerException(
                     f"Parent run with UUID {run.parent_uuid} not found."
                 )
 
+            if isinstance(parent_run, LLMRun):
+                raise TracerException(
+                    "Cannot add child run to an LLM run. "
+                    "LLM runs are not allowed to have children."
+                )
+            self._add_child_run(parent_run, run)
         self.run_map[run.uuid] = run
 
     def _end_trace(self, run: Union[LLMRun, ChainRun, ToolRun]) -> None:

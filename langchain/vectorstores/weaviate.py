@@ -120,9 +120,7 @@ class Weaviate(VectorStore):
         from weaviate.util import get_valid_uuid
 
         def json_serializable(value: Any) -> Any:
-            if isinstance(value, datetime.datetime):
-                return value.isoformat()
-            return value
+            return value.isoformat() if isinstance(value, datetime.datetime) else value
 
         with self._client.batch as batch:
             ids = []

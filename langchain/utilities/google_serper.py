@@ -76,7 +76,7 @@ class GoogleSerperAPIWrapper(BaseModel):
 
     async def aresults(self, query: str, **kwargs: Any) -> Dict:
         """Run query through GoogleSearch."""
-        results = await self._async_google_serper_search_results(
+        return await self._async_google_serper_search_results(
             query,
             gl=self.gl,
             hl=self.hl,
@@ -85,7 +85,6 @@ class GoogleSerperAPIWrapper(BaseModel):
             tbs=self.tbs,
             **kwargs,
         )
-        return results
 
     async def arun(self, query: str, **kwargs: Any) -> str:
         """Run query through GoogleSearch and parse result async."""
@@ -116,22 +115,22 @@ class GoogleSerperAPIWrapper(BaseModel):
         if results.get("knowledgeGraph"):
             kg = results.get("knowledgeGraph", {})
             title = kg.get("title")
-            entity_type = kg.get("type")
-            if entity_type:
+            if entity_type := kg.get("type"):
                 snippets.append(f"{title}: {entity_type}.")
-            description = kg.get("description")
-            if description:
+            if description := kg.get("description"):
                 snippets.append(description)
-            for attribute, value in kg.get("attributes", {}).items():
-                snippets.append(f"{title} {attribute}: {value}.")
-
+            snippets.extend(
+                f"{title} {attribute}: {value}."
+                for attribute, value in kg.get("attributes", {}).items()
+            )
         for result in results["organic"][: self.k]:
             if "snippet" in result:
                 snippets.append(result["snippet"])
-            for attribute, value in result.get("attributes", {}).items():
-                snippets.append(f"{attribute}: {value}.")
-
-        if len(snippets) == 0:
+            snippets.extend(
+                f"{attribute}: {value}."
+                for attribute, value in result.get("attributes", {}).items()
+            )
+        if not snippets:
             return "No good Google Search Result was found"
 
         return " ".join(snippets)
@@ -151,8 +150,7 @@ class GoogleSerperAPIWrapper(BaseModel):
             f"https://google.serper.dev/{search_type}", headers=headers, params=params
         )
         response.raise_for_status()
-        search_results = response.json()
-        return search_results
+        return response.json()
 
     async def _async_google_serper_search_results(
         self, search_term: str, search_type: str = "search", **kwargs: Any

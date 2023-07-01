@@ -108,17 +108,16 @@ class LangChainTracer(BaseTracer):
 
 def _get_tenant_id() -> Optional[str]:
     """Get the tenant ID for the LangChain API."""
-    tenant_id: Optional[str] = os.getenv("LANGCHAIN_TENANT_ID")
-    if tenant_id:
+    if tenant_id := os.getenv("LANGCHAIN_TENANT_ID"):
         return tenant_id
     endpoint = _get_endpoint()
     headers = _get_headers()
-    response = requests.get(endpoint + "/tenants", headers=headers)
+    response = requests.get(f"{endpoint}/tenants", headers=headers)
     raise_for_status_with_text(response)
-    tenants: List[Dict[str, Any]] = response.json()
-    if not tenants:
+    if tenants := response.json():
+        return tenants[0]["id"]
+    else:
         raise ValueError(f"No tenants found for URL {endpoint}")
-    return tenants[0]["id"]
 
 
 class LangChainTracerV2(LangChainTracer):

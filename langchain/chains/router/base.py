@@ -72,16 +72,19 @@ class MultiRouteChain(Chain):
         route = self.router_chain.route(inputs, callbacks=callbacks)
 
         _run_manager.on_text(
-            str(route.destination) + ": " + str(route.next_inputs), verbose=self.verbose
+            f"{str(route.destination)}: {str(route.next_inputs)}",
+            verbose=self.verbose,
         )
-        if not route.destination:
+        if (
+            not route.destination
+            or route.destination not in self.destination_chains
+            and self.silent_errors
+        ):
             return self.default_chain(route.next_inputs, callbacks=callbacks)
         elif route.destination in self.destination_chains:
             return self.destination_chains[route.destination](
                 route.next_inputs, callbacks=callbacks
             )
-        elif self.silent_errors:
-            return self.default_chain(route.next_inputs, callbacks=callbacks)
         else:
             raise ValueError(
                 f"Received invalid destination chain name '{route.destination}'"

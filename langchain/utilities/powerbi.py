@@ -65,7 +65,7 @@ class PowerBIDataset(BaseModel):
         if self.token:
             return {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer " + self.token,
+                "Authorization": f"Bearer {self.token}",
             }
         from azure.core.exceptions import (  # pylint: disable=import-outside-toplevel
             ClientAuthenticationError,
@@ -76,10 +76,7 @@ class PowerBIDataset(BaseModel):
                 token = self.credential.get_token(
                     "https://analysis.windows.net/powerbi/api/.default"
                 ).token
-                return {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token,
-                }
+                return {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 raise ClientAuthenticationError(
                     "Could not get a token from the supplied credentials."
@@ -206,18 +203,16 @@ class PowerBIDataset(BaseModel):
         )
         if self.aiosession:
             async with self.aiosession.post(
-                self.request_url, headers=self.headers, json=json_content, timeout=10
-            ) as response:
+                        self.request_url, headers=self.headers, json=json_content, timeout=10
+                    ) as response:
                 response.raise_for_status()
-                response_json = await response.json()
-                return response_json
+                return await response.json()
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                self.request_url, headers=self.headers, json=json_content, timeout=10
-            ) as response:
+                        self.request_url, headers=self.headers, json=json_content, timeout=10
+                    ) as response:
                 response.raise_for_status()
-                response_json = await response.json()
-                return response_json
+                return await response.json()
 
 
 def json_to_md(
