@@ -153,9 +153,8 @@ class BaseTool(ABC, BaseModel, metaclass=ToolMetaclass):
     def args(self) -> dict:
         if self.args_schema is not None:
             return self.args_schema.schema()["properties"]
-        else:
-            schema = create_schema_from_function(self.name, self._run)
-            return schema.schema()["properties"]
+        schema = create_schema_from_function(self.name, self._run)
+        return schema.schema()["properties"]
 
     def _parse_input(
         self,
@@ -163,12 +162,11 @@ class BaseTool(ABC, BaseModel, metaclass=ToolMetaclass):
     ) -> None:
         """Convert tool input to pydantic model."""
         input_args = self.args_schema
-        if isinstance(tool_input, str):
-            if input_args is not None:
+        if input_args is not None:
+            if isinstance(tool_input, str):
                 key_ = next(iter(input_args.__fields__.keys()))
                 input_args.validate({key_: tool_input})
-        else:
-            if input_args is not None:
+            else:
                 input_args.validate(tool_input)
 
     @root_validator()
@@ -225,10 +223,7 @@ class BaseTool(ABC, BaseModel, metaclass=ToolMetaclass):
     ) -> Any:
         """Run the tool."""
         self._parse_input(tool_input)
-        if not self.verbose and verbose is not None:
-            verbose_ = verbose
-        else:
-            verbose_ = self.verbose
+        verbose_ = self.verbose if self.verbose or verbose is None else verbose
         callback_manager = CallbackManager.configure(
             callbacks, self.callbacks, verbose=verbose_
         )
@@ -264,10 +259,7 @@ class BaseTool(ABC, BaseModel, metaclass=ToolMetaclass):
     ) -> Any:
         """Run the tool asynchronously."""
         self._parse_input(tool_input)
-        if not self.verbose and verbose is not None:
-            verbose_ = verbose
-        else:
-            verbose_ = self.verbose
+        verbose_ = self.verbose if self.verbose or verbose is None else verbose
         callback_manager = AsyncCallbackManager.configure(
             callbacks, self.callbacks, verbose=verbose_
         )
@@ -553,7 +545,7 @@ def tool(
         # if the argument is a function, then we use the function name as the tool name
         # Example usage: @tool
         return _make_with_name(args[0].__name__)(args[0])
-    elif len(args) == 0:
+    elif not args:
         # if there are no arguments, then we use the function name as the tool name
         # Example usage: @tool(return_direct=True)
         def _partial(func: Callable[[str], str]) -> BaseTool:

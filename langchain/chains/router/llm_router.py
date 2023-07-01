@@ -52,11 +52,10 @@ class LLMRouterChain(RouterChain):
     ) -> Dict[str, Any]:
         _run_manager = run_manager or CallbackManagerForChainRun.get_noop_manager()
         callbacks = _run_manager.get_child()
-        output = cast(
+        return cast(
             Dict[str, Any],
             self.llm_chain.predict_and_parse(callbacks=callbacks, **inputs),
         )
-        return output
 
     @classmethod
     def from_llm(

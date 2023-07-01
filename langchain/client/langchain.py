@@ -70,17 +70,16 @@ class LangChainPlusClient(BaseSettings):
         """Verify API key is provided if url not localhost."""
         api_url: str = values.get("api_url", "http://localhost:8000")
         api_key: Optional[str] = values.get("api_key")
-        if not _is_localhost(api_url):
-            if not api_key:
-                raise ValueError(
-                    "API key must be provided when using hosted LangChain+ API"
-                )
-        else:
+        if _is_localhost(api_url):
             tenant_id = values.get("tenant_id")
             if not tenant_id:
                 values["tenant_id"] = LangChainPlusClient._get_seeded_tenant_id(
                     api_url, api_key
                 )
+        elif not api_key:
+            raise ValueError(
+                "API key must be provided when using hosted LangChain+ API"
+            )
         return values
 
     @staticmethod
@@ -97,7 +96,7 @@ class LangChainPlusClient(BaseSettings):
             ) from e
         results: List[dict] = response.json()
         breakpoint()
-        if len(results) == 0:
+        if not results:
             raise ValueError("No seeded tenant found")
         return results[0]["id"]
 
@@ -164,7 +163,7 @@ class LangChainPlusClient(BaseSettings):
             "tenant_id": self.tenant_id,
         }
         response = requests.post(
-            self.api_url + "/datasets/upload",
+            f"{self.api_url}/datasets/upload",
             headers=self._headers,
             data=data,
             files=files,
@@ -186,9 +185,7 @@ class LangChainPlusClient(BaseSettings):
             description=description,
         )
         response = requests.post(
-            self.api_url + "/datasets",
-            headers=self._headers,
-            data=dataset.json(),
+            f"{self.api_url}/datasets", headers=self._headers, data=dataset.json()
         )
         raise_for_status_with_text(response)
         return Dataset(**response.json())
@@ -283,8 +280,6 @@ class LangChainPlusClient(BaseSettings):
         elif dataset_name is not None:
             dataset_id = self.read_dataset(dataset_name=dataset_name).id
             params["dataset"] = dataset_id
-        else:
-            pass
         response = self._get("/examples", params=params)
         raise_for_status_with_text(response)
         return [Example(**dataset) for dataset in response.json()]
